@@ -4,66 +4,76 @@ let isValid = require("./auth_users.js").isValid;
 let users = require("./auth_users.js").users;
 const public_users = express.Router();
 
-public_users.post("/register", (req, res) => {
-  const { username, password } = req.body || {};
+public_users.post("/register", (req,res) => {
+  const username = req.body.username;
+  const password = req.body.password;
+
   if (!username || !password) {
     return res.status(400).json({ message: "Username and password are required" });
   }
-  if (users.find(u => u.username === username)) {
-    return res.status(409).json({ message: "User already exists" });
+
+  if (users.filter(user => user.username === username).length > 0) {
+    return res.status(409).json({ message: "Username already exists" });
   }
-  if (typeof isValid === "function" && !isValid(username)) {
-    return res.status(400).json({ message: "Invalid username" });
-  }
-  users.push({ username, password });
-  return res.status(201).json({ message: "User successfully registered" });
+
+  users.push({ username: username, password: password });
+  return res.status(200).json({ message: "User successfully registered. Now you can login" });
 });
 
-public_users.get('/', function (req, res) {
-  return res.status(200).send(JSON.stringify(books, null, 2));
+public_users.get('/',function (req, res) {
+  return res.status(200).send(JSON.stringify(books, null, 4));
 });
 
-public_users.get('/isbn/:isbn', function (req, res) {
-  const { isbn } = req.params;
-  const book = books[isbn];
-  if (!book) {
+public_users.get('/isbn/:isbn',function (req, res) {
+  const isbn = req.params.isbn;
+  if (books[isbn]) {
+    return res.status(200).send(JSON.stringify(books[isbn], null, 4));
+  } else {
     return res.status(404).json({ message: "Book not found" });
   }
-  return res.status(200).send(JSON.stringify(book, null, 2));
 });
+  
+public_users.get('/author/:author',function (req, res) {
+  const author = req.params.author;
+  let filtered_books = [];
 
-public_users.get('/author/:author', function (req, res) {
-  const author = String(req.params.author || "").toLowerCase();
-  const result = Object.keys(books).reduce((acc, isbn) => {
-    const book = books[isbn];
-    if (book && typeof book.author === "string" && book.author.toLowerCase() === author) {
-      acc[isbn] = book;
+  Object.keys(books).forEach(key => {
+    if (books[key].author === author) {
+      filtered_books.push(books[key]);
     }
-    return acc;
-  }, {});
-  return res.status(200).send(JSON.stringify(result, null, 2));
+  });
+
+  if (filtered_books.length > 0) {
+    return res.status(200).send(JSON.stringify(filtered_books, null, 4));
+  } else {
+    return res.status(404).json({ message: "No books found for this author" });
+  }
 });
 
-public_users.get('/title/:title', function (req, res) {
-  const title = String(req.params.title || "").toLowerCase();
-  const result = Object.keys(books).reduce((acc, isbn) => {
-    const book = books[isbn];
-    if (book && typeof book.title === "string" && book.title.toLowerCase() === title) {
-      acc[isbn] = book;
+public_users.get('/title/:title',function (req, res) {
+  const title = req.params.title;
+  let filtered_books = [];
+
+  Object.keys(books).forEach(key => {
+    if (books[key].title === title) {
+      filtered_books.push(books[key]);
     }
-    return acc;
-  }, {});
-  return res.status(200).send(JSON.stringify(result, null, 2));
+  });
+
+  if (filtered_books.length > 0) {
+    return res.status(200).send(JSON.stringify(filtered_books, null, 4));
+  } else {
+    return res.status(404).json({ message: "No books found with this title" });
+  }
 });
 
-public_users.get('/review/:isbn', function (req, res) {
-  const { isbn } = req.params;
-  const book = books[isbn];
-  if (!book) {
+public_users.get('/review/:isbn',function (req, res) {
+  const isbn = req.params.isbn;
+  if (books[isbn]) {
+    return res.status(200).send(JSON.stringify(books[isbn].reviews, null, 4));
+  } else {
     return res.status(404).json({ message: "Book not found" });
   }
-  const reviews = book.reviews || {};
-  return res.status(200).send(JSON.stringify(reviews, null, 2));
 });
 
 module.exports.general = public_users;
