@@ -1,4 +1,5 @@
 const express = require('express');
+const axios = require('axios');
 let books = require("./booksdb.js");
 let isValid = require("./auth_users.js").isValid;
 let users = require("./auth_users.js").users;
@@ -73,6 +74,51 @@ public_users.get('/review/:isbn',function (req, res) {
     return res.status(200).send(JSON.stringify(books[isbn].reviews, null, 4));
   } else {
     return res.status(404).json({ message: "Book not found" });
+  }
+});
+
+
+
+public_users.get('/async/books', async (req, res) => {
+  try {
+    const port = process.env.PORT || 5000;
+    const { data } = await axios.get(`http://localhost:${port}/`);
+    return res.status(200).send(data);
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to fetch books asynchronously" });
+  }
+});
+
+public_users.get('/async/isbn/:isbn', async (req, res) => {
+  try {
+    const port = process.env.PORT || 5000;
+    const isbn = req.params.isbn;
+    const { data } = await axios.get(`http://localhost:${port}/isbn/${isbn}`);
+    return res.status(200).send(data);
+  } catch (err) {
+    return res.status( err?.response?.status || 500 ).json({ message: "Failed to fetch by ISBN asynchronously" });
+  }
+});
+
+public_users.get('/async/author/:author', async (req, res) => {
+  try {
+    const port = process.env.PORT || 5000;
+    const author = encodeURIComponent(req.params.author);
+    const { data } = await axios.get(`http://localhost:${port}/author/${author}`);
+    return res.status(200).send(data);
+  } catch (err) {
+    return res.status( err?.response?.status || 500 ).json({ message: "Failed to fetch by author asynchronously" });
+  }
+});
+
+public_users.get('/async/title/:title', async (req, res) => {
+  try {
+    const port = process.env.PORT || 5000;
+    const title = encodeURIComponent(req.params.title);
+    const { data } = await axios.get(`http://localhost:${port}/title/${title}`);
+    return res.status(200).send(data);
+  } catch (err) {
+    return res.status( err?.response?.status || 500 ).json({ message: "Failed to fetch by title asynchronously" });
   }
 });
 
